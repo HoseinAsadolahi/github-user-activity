@@ -3,14 +3,43 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"github.com/charmbracelet/lipgloss"
 	"net/http"
+	"strings"
 )
 
-func fetchData(username string, page int) (map[string]any, error) {
+var DashStyle = lipgloss.NewStyle().
+	Bold(true).
+	Foreground(lipgloss.Color("#DC143C")).
+	Margin(0, 0, 0, 4)
+
+var ContentStyle = lipgloss.NewStyle().
+	Bold(true).
+	Foreground(lipgloss.Color("#FFD700"))
+
+var InfoStyle = lipgloss.NewStyle().
+	Bold(true).
+	Foreground(lipgloss.Color("#32CD32"))
+
+var ErrorStyle = lipgloss.NewStyle().
+	Bold(true).
+	Underline(true).
+	Foreground(lipgloss.Color("#FF0000"))
+
+func DisplayInfo(username string, page int) {
+	data, err := fetchData(username, page)
+	if err != nil {
+		fmt.Println(ErrorStyle.Render(err.Error()))
+	}
+	for _, item := range data {
+		muxData(item)
+	}
+}
+
+func fetchData(username string, page int) ([]map[string]any, error) {
 	response, err := http.Get(fmt.Sprintf("https://api.github.com/users/%s/events?page=%d", username, page))
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(ErrorStyle.Render(err.Error()))
 	}
 	if response.StatusCode != 200 {
 		if response.StatusCode == 404 {
@@ -19,59 +48,77 @@ func fetchData(username string, page int) (map[string]any, error) {
 			return nil, fmt.Errorf("error fetching data. status code: %d", response.StatusCode)
 		}
 	}
-	var result map[string]any
+	var result []map[string]any
 	if err := json.NewDecoder(response.Body).Decode(&result); err != nil {
-		log.Fatal(err)
+		fmt.Println(ErrorStyle.Render(err.Error()))
 	}
 	return result, nil
 }
 
-func muxData(data map[string]any) string {
+func muxData(data map[string]any) {
 	switch data["type"] {
 	case "CommitCommentEvent":
-		break
+		commitCommentEvent(data)
 	case "CreateEvent":
-		break
+		createEvent(data)
 	case "DeleteEvent":
-		break
+		deleteEvent(data)
 	case "ForkEvent":
-		break
+		forkEvent(data)
 	case "IssueCommentEvent":
-		break
+		issueCommentEvent(data)
 	case "IssuesEvent":
-		break
+		issuesEvent(data)
 	case "MemberEvent":
-		break
+		memberEvent(data)
 	case "PublicEvent":
-		break
+		publicEvent(data)
 	case "PullRequestEvent":
-		break
+		pullRequestEvent(data)
 	case "PullRequestReviewEvent":
-		break
+		pullRequestReviewEvent(data)
 	case "PullRequestReviewCommentEvent":
-		break
+		pullRequestReviewCommentEvent(data)
 	case "PullRequestReviewThreadEvent":
-		break
+		pullRequestReviewThreadEvent(data)
 	case "PushEvent":
-		break
+		pushEvent(data)
 	case "ReleaseEvent":
-		break
+		releaseEvent(data)
 	case "SponsorshipEvent":
-		break
+		sponsorshipEvent(data)
 	case "WatchEvent":
-		break
+		watchEvent(data)
 	}
-	return "error multiplexing github event"
 }
 
-func commitCommentEvent(data map[string]any) string {
-	// Handle CommitCommentEvent
-	return "Handled CommitCommentEvent"
+func commitCommentEvent(data map[string]any) {
+	payload := data["payload"].(map[string]any)
+	comment := payload["comment"].(map[string]any)
+	body := comment["body"].(string)
+	action := payload["action"].(string)
+	commitID := comment["commit_id"].(string)
+	repository := data["repo"].(map[string]any)
+	repoName := repository["name"].(string)
+	time := data["created_at"].(string)
+
+	result := DashStyle.Render("-") +
+		ContentStyle.Render(fmt.Sprintf("%s a comment on %s saying \"%s\" in %s at %s!",
+			strings.ToUpper(string(action[0]))+action[1:], commitID, body, repoName, time))
+	fmt.Println(result)
 }
 
-func createEvent(data map[string]any) string {
-	// Handle CreateEvent
-	return "Handled CreateEvent"
+func createEvent(data map[string]any) {
+	payload := data["payload"].(map[string]any)
+	createType := payload["ref_type"].(string)
+	repository := data["repo"].(map[string]any)
+	repoName := repository["name"].(string)
+	time := data["created_at"].(string)
+
+	result := DashStyle.Render("-") +
+		ContentStyle.Render(fmt.Sprintf("Created a %s in %s at %s!",
+			createType, repoName, time))
+	fmt.Println(result)
 }
 
 func deleteEvent(data map[string]any) string {
