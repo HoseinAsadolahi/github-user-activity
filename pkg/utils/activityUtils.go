@@ -206,7 +206,8 @@ func issuesEvent(data map[string]any) {
 		prevTitle := payload["changes"].(map[string]any)["title"].(map[string]any)["from"].(string)
 		updatedAt := data["updated_at"].(string)
 		result = DashStyle.Render("-") + ContentStyle.Render(fmt.Sprintf(
-			"%s an issue at %s"+IfThenElse(prevTitle == title, fmt.Sprintf(" with \"%s\" as title",
+			"%s an issue at %s"+IfThenElse(prevTitle == title, fmt.Sprintf(
+				" with \"%s\" as title",
 				title), fmt.Sprintf(" and changed its title from %s into %s",
 				prevTitle, title)).(string)+IfThenElse(prevBody == body, " ",
 				" and updated the description ").(string)+"at %s",
@@ -282,14 +283,16 @@ func pullRequestEvent(data map[string]any) {
 	case "edited":
 		prevTitle := payload["changes"].(map[string]any)["title"].(map[string]any)["from"].(string)
 		result = DashStyle.Render("-") + ContentStyle.Render(fmt.Sprintf(
-			"%s a pull request:%s "+IfThenElse(prevTitle == title, fmt.Sprintf("with \"%s\" as title",
+			"%s a pull request:%s "+IfThenElse(prevTitle == title, fmt.Sprintf(
+				"with \"%s\" as title",
 				title), fmt.Sprintf(" and changed its title from %s into %s",
 				prevTitle, title)).(string)+"in %s at %s",
 			strings.ToUpper(string(action[0]))+action[1:], url, repoName, updatedAt))
 	case "dequeued":
 		reason := payload["reason"].(string)
 		result = DashStyle.Render("-") +
-			ContentStyle.Render(fmt.Sprintf("%s a pull request: %s with \"%s\" as title in %s because %s at %s!",
+			ContentStyle.Render(fmt.Sprintf("%s a pull request: %s with \"%s\" as title in %s"+
+				" because %s at %s!",
 				strings.ToUpper(string(action[0]))+action[1:], url, title, repoName, reason, updatedAt))
 	default:
 		result = DashStyle.Render("-") +
@@ -301,7 +304,6 @@ func pullRequestEvent(data map[string]any) {
 
 func pullRequestReviewEvent(data map[string]any) {
 	payload := data["payload"].(map[string]any)
-	body := payload["review"].(map[string]any)["body"].(string)
 	pullReq := payload["pull_request"].(map[string]any)
 	url := pullReq["url"].(string)
 	action := payload["action"].(string)
@@ -313,14 +315,13 @@ func pullRequestReviewEvent(data map[string]any) {
 	switch action {
 	case "edited":
 		updatedAt := data["updated_at"].(string)
-		prev := payload["changes"].(map[string]any)["body"].(map[string]any)["from"].(string)
 		result = DashStyle.Render("-") +
-			ContentStyle.Render(fmt.Sprintf("%s a comment on %s saying \"%s\" to \"%s\" in %s at %s!",
-				strings.ToUpper(string(action[0]))+action[1:], url, body, prev, repoName, updatedAt))
+			ContentStyle.Render(fmt.Sprintf("%s a review on %s in %s at %s!",
+				strings.ToUpper(string(action[0]))+action[1:], url, repoName, updatedAt))
 	default:
 		result = DashStyle.Render("-") +
-			ContentStyle.Render(fmt.Sprintf("%s a review on %s saying \"%s\" in %s at %s!",
-				strings.ToUpper(string(action[0]))+action[1:], url, body, repoName, createdAt))
+			ContentStyle.Render(fmt.Sprintf("%s a review on %s in %s at %s!",
+				strings.ToUpper(string(action[0]))+action[1:], url, repoName, createdAt))
 	}
 	fmt.Println(result)
 }
@@ -386,19 +387,50 @@ func pushEvent(data map[string]any) {
 	}
 }
 
-func releaseEvent(data map[string]any) string {
-	// Handle ReleaseEvent
-	return "Handled ReleaseEvent"
+func releaseEvent(data map[string]any) {
+	payload := data["payload"].(map[string]any)
+	action := payload["action"].(string)
+	release := payload["release"].(map[string]any)
+	url := release["url"].(string)
+	tag := release["tag"].(string)
+	repository := data["repo"].(map[string]any)
+	repoName := repository["name"].(string)
+	createdAt := data["created_at"].(string)
+
+	result := DashStyle.Render("-") +
+		ContentStyle.Render(fmt.Sprintf("%s a release at %s with %s as tag in %s at %s!",
+			strings.ToUpper(string(action[0]))+action[1:], url, tag, repoName, createdAt))
+	fmt.Println(result)
 }
 
-func sponsorshipEvent(data map[string]any) string {
-	// Handle SponsorshipEvent
-	return "Handled SponsorshipEvent"
+func sponsorshipEvent(data map[string]any) {
+	payload := data["payload"].(map[string]any)
+	sponsorship := payload["sponsorship"].(map[string]any)
+	sponsor := sponsorship["sponsor"].(map[string]any)["email"].(string)
+	sponsorable := sponsorship["sponsorable"].(map[string]any)["email"].(string)
+	action := payload["action"].(string)
+	repository := data["repo"].(map[string]any)
+	repoName := repository["name"].(string)
+	createdAt := data["created_at"].(string)
+
+	result := DashStyle.Render("-") +
+		ContentStyle.Render(fmt.Sprintf("%s sponsership with %s as sponsor"+
+			"and %s as sponsorable in %s at %s!", strings.ToUpper(string(action[0]))+action[1:],
+			sponsor, sponsorable, repoName, createdAt))
+	fmt.Println(result)
 }
 
-func watchEvent(data map[string]any) string {
-	// Handle WatchEvent
-	return "Handled WatchEvent"
+func watchEvent(data map[string]any) {
+	payload := data["payload"].(map[string]any)
+	action := payload["action"].(string)
+	repository := data["repo"].(map[string]any)
+	repoName := repository["name"].(string)
+	createdAt := data["created_at"].(string)
+
+	result := DashStyle.Render("-") +
+		ContentStyle.Render(fmt.Sprintf("%s to watch repo:%s at %s!",
+			strings.ToUpper(string(action[0]))+action[1:], repoName, createdAt))
+	fmt.Println(result)
 }
 
 func IfThenElse(condition bool, a interface{}, b interface{}) interface{} {
