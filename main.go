@@ -1,7 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"github.com/HoseinAsadolahi/github-user-activity/cmd"
+)
 
 func main() {
-	fmt.Println("init")
+	cmd.Execute()
 }
