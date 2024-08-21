@@ -14,6 +14,11 @@ var DashStyle = lipgloss.NewStyle().
 	Foreground(lipgloss.Color("#DC143C")).
 	Margin(0, 0, 0, 4)
 
+var IdStyle = lipgloss.NewStyle().
+	Bold(true).
+	Foreground(lipgloss.Color("#DC143C")).
+	Margin(0, 0, 0, 8)
+
 var ContentStyle = lipgloss.NewStyle().
 	Bold(true).
 	Foreground(lipgloss.Color("#FFD700"))
@@ -172,10 +177,11 @@ func issueCommentEvent(data map[string]any) {
 	var result string
 	switch action {
 	case "edited":
+		updatedAt := data["updated_at"].(string)
 		prev := payload["changes"].(map[string]any)["body"].(map[string]any)["from"].(string)
 		result = DashStyle.Render("-") +
-			ContentStyle.Render(fmt.Sprintf("%s a comment on %s saying \"%s\" to\"%s\" in %s at %s!",
-				strings.ToUpper(string(action[0]))+action[1:], url, body, prev, repoName, createdAt))
+			ContentStyle.Render(fmt.Sprintf("%s a comment on %s saying \"%s\" to \"%s\" in %s at %s!",
+				strings.ToUpper(string(action[0]))+action[1:], url, body, prev, repoName, updatedAt))
 	default:
 		result = DashStyle.Render("-") +
 			ContentStyle.Render(fmt.Sprintf("%s a comment on %s saying \"%s\" in %s at %s!",
@@ -297,24 +303,90 @@ func pullRequestEvent(data map[string]any) {
 	fmt.Println(result)
 }
 
-func pullRequestReviewEvent(data map[string]any) string {
-	// Handle PullRequestReviewEvent
-	return "Handled PullRequestReviewEvent"
+func pullRequestReviewEvent(data map[string]any) {
+	payload := data["payload"].(map[string]any)
+	body := payload["review"].(map[string]any)["body"].(string)
+	pullReq := payload["pull_request"].(map[string]any)
+	url := pullReq["url"].(string)
+	action := payload["action"].(string)
+	repository := data["repo"].(map[string]any)
+	repoName := repository["name"].(string)
+	createdAt := data["created_at"].(string)
+
+	var result string
+	switch action {
+	case "edited":
+		updatedAt := data["updated_at"].(string)
+		prev := payload["changes"].(map[string]any)["body"].(map[string]any)["from"].(string)
+		result = DashStyle.Render("-") +
+			ContentStyle.Render(fmt.Sprintf("%s a comment on %s saying \"%s\" to \"%s\" in %s at %s!",
+				strings.ToUpper(string(action[0]))+action[1:], url, body, prev, repoName, updatedAt))
+	default:
+		result = DashStyle.Render("-") +
+			ContentStyle.Render(fmt.Sprintf("%s a review on %s saying \"%s\" in %s at %s!",
+				strings.ToUpper(string(action[0]))+action[1:], url, body, repoName, createdAt))
+	}
+	fmt.Println(result)
 }
 
-func pullRequestReviewCommentEvent(data map[string]any) string {
-	// Handle PullRequestReviewCommentEvent
-	return "Handled PullRequestReviewCommentEvent"
+func pullRequestReviewCommentEvent(data map[string]any) {
+	payload := data["payload"].(map[string]any)
+	comment := payload["comment"].(map[string]any)
+	body := comment["body"].(string)
+	pullReq := payload["pull_request"].(map[string]any)
+	url := pullReq["url"].(string)
+	action := payload["action"].(string)
+	repository := data["repo"].(map[string]any)
+	repoName := repository["name"].(string)
+	createdAt := data["created_at"].(string)
+
+	var result string
+	switch action {
+	case "edited":
+		prev := payload["changes"].(map[string]any)["body"].(map[string]any)["from"].(string)
+		result = DashStyle.Render("-") +
+			ContentStyle.Render(fmt.Sprintf("%s a comment on %s saying \"%s\" to \"%s\" in %s at %s!",
+				strings.ToUpper(string(action[0]))+action[1:], url, body, prev, repoName, createdAt))
+	default:
+		result = DashStyle.Render("-") +
+			ContentStyle.Render(fmt.Sprintf("%s a comment on %s saying \"%s\" in %s at %s!",
+				strings.ToUpper(string(action[0]))+action[1:], url, body, repoName, createdAt))
+	}
+	fmt.Println(result)
 }
 
-func pullRequestReviewThreadEvent(data map[string]any) string {
-	// Handle PullRequestReviewThreadEvent
-	return "Handled PullRequestReviewThreadEvent"
+func pullRequestReviewThreadEvent(data map[string]any) {
+	payload := data["payload"].(map[string]any)
+	pullReq := payload["pull_request"].(map[string]any)
+	url := pullReq["url"].(string)
+	action := payload["action"].(string)
+	repository := data["repo"].(map[string]any)
+	repoName := repository["name"].(string)
+	updatedAt := data["updated_at"].(string)
+
+	result := DashStyle.Render("-") +
+		ContentStyle.Render(fmt.Sprintf("Marked pull request:%s as %s in %s at %s!",
+			url, action, repoName, updatedAt))
+	fmt.Println(result)
 }
 
-func pushEvent(data map[string]any) string {
-	// Handle PushEvent
-	return "Handled PushEvent"
+func pushEvent(data map[string]any) {
+	payload := data["payload"].(map[string]any)
+	commits := payload["commits"].([]map[string]any)
+	repository := data["repo"].(map[string]any)
+	repoName := repository["name"].(string)
+	createdAt := data["created_at"].(string)
+
+	result := DashStyle.Render("-") +
+		ContentStyle.Render(fmt.Sprintf("Pushed %d commits in %s at %s shown below:",
+			len(commits), repoName, createdAt))
+	fmt.Println(result)
+	for _, commit := range commits {
+		message := commit["message"].(string)
+		id := commit["id"].(string)
+		author := commit["author"].(map[string]any)["email"].(string)
+		fmt.Println(IdStyle.Render(id+": ") + ContentStyle.Render(message+" By "+author))
+	}
 }
 
 func releaseEvent(data map[string]any) string {
