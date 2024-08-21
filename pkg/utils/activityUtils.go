@@ -44,7 +44,7 @@ func DisplayInfo(username string, page int) {
 
 func fetchData(username string, page int) ([]map[string]any, error) {
 	client := http.Client{
-		Timeout: 3 * time.Second,
+		Timeout: 5 * time.Second,
 	}
 	response, err := client.Get(fmt.Sprintf("https://api.github.com/users/%s/events?page=%d",
 		username, page))
@@ -110,11 +110,11 @@ func commitCommentEvent(data map[string]any) {
 	commitID := comment["commit_id"].(string)
 	repository := data["repo"].(map[string]any)
 	repoName := repository["name"].(string)
-	time := data["created_at"].(string)
+	createdAt := data["created_at"].(string)
 
 	result := DashStyle.Render("-") +
 		ContentStyle.Render(fmt.Sprintf("%s a comment on %s saying \"%s\" in %s at %s!",
-			strings.ToUpper(string(action[0]))+action[1:], commitID, body, repoName, time))
+			strings.ToUpper(string(action[0]))+action[1:], commitID, body, repoName, createdAt))
 	fmt.Println(result)
 }
 
@@ -123,11 +123,11 @@ func createEvent(data map[string]any) {
 	createType := payload["ref_type"].(string)
 	repository := data["repo"].(map[string]any)
 	repoName := repository["name"].(string)
-	time := data["created_at"].(string)
+	createdAt := data["created_at"].(string)
 
 	result := DashStyle.Render("-") +
 		ContentStyle.Render(fmt.Sprintf("Created a %s in %s at %s!",
-			createType, repoName, time))
+			createType, repoName, createdAt))
 	fmt.Println(result)
 }
 
@@ -136,25 +136,25 @@ func deleteEvent(data map[string]any) {
 	createType := payload["ref_type"].(string)
 	repository := data["repo"].(map[string]any)
 	repoName := repository["name"].(string)
-	time := data["created_at"].(string)
+	createdAt := data["created_at"].(string)
 
 	result := DashStyle.Render("-") +
 		ContentStyle.Render(fmt.Sprintf("Deleted a %s in %s at %s!",
-			createType, repoName, time))
+			createType, repoName, createdAt))
 	fmt.Println(result)
 }
 
 func forkEvent(data map[string]any) {
 	payload := data["payload"].(map[string]any)
 	fork := payload["forkee"].(map[string]any)
-	repository := data["repository"].(map[string]any)
+	repository := data["repo"].(map[string]any)
 	forkRepoName := fork["name"].(string)
 	repoName := repository["name"].(string)
-	time := data["created_at"].(string)
+	createdAt := data["created_at"].(string)
 
 	result := DashStyle.Render("-") +
 		ContentStyle.Render(fmt.Sprintf("Forked a repo from %s into %s at %s!",
-			forkRepoName, repoName, time))
+			forkRepoName, repoName, createdAt))
 	fmt.Println(result)
 }
 
@@ -167,7 +167,7 @@ func issueCommentEvent(data map[string]any) {
 	action := payload["action"].(string)
 	repository := data["repo"].(map[string]any)
 	repoName := repository["name"].(string)
-	time := data["created_at"].(string)
+	createdAt := data["created_at"].(string)
 
 	var result string
 	switch action {
@@ -175,11 +175,11 @@ func issueCommentEvent(data map[string]any) {
 		prev := payload["changes"].(map[string]any)["body"].(map[string]any)["from"].(string)
 		result = DashStyle.Render("-") +
 			ContentStyle.Render(fmt.Sprintf("%s a comment on %s saying \"%s\" to\"%s\" in %s at %s!",
-				strings.ToUpper(string(action[0]))+action[1:], url, body, prev, repoName, time))
+				strings.ToUpper(string(action[0]))+action[1:], url, body, prev, repoName, createdAt))
 	default:
 		result = DashStyle.Render("-") +
 			ContentStyle.Render(fmt.Sprintf("%s a comment on %s saying \"%s\" in %s at %s!",
-				strings.ToUpper(string(action[0]))+action[1:], url, body, repoName, time))
+				strings.ToUpper(string(action[0]))+action[1:], url, body, repoName, createdAt))
 	}
 	fmt.Println(result)
 }
@@ -194,9 +194,15 @@ func memberEvent(data map[string]any) string {
 	return "Handled MemberEvent"
 }
 
-func publicEvent(data map[string]any) string {
-	// Handle PublicEvent
-	return "Handled PublicEvent"
+func publicEvent(data map[string]any) {
+	repository := data["repo"].(map[string]any)
+	repoName := repository["name"].(string)
+	createdAt := data["created_at"].(string)
+
+	result := DashStyle.Render("-") +
+		ContentStyle.Render(fmt.Sprintf("Changed visability of %s from private into public at %s!",
+			repoName, createdAt))
+	fmt.Println(result)
 }
 
 func pullRequestEvent(data map[string]any) string {
