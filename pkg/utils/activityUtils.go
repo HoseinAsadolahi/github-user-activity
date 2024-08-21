@@ -121,19 +121,57 @@ func createEvent(data map[string]any) {
 	fmt.Println(result)
 }
 
-func deleteEvent(data map[string]any) string {
-	// Handle DeleteEvent
-	return "Handled DeleteEvent"
+func deleteEvent(data map[string]any) {
+	payload := data["payload"].(map[string]any)
+	createType := payload["ref_type"].(string)
+	repository := data["repo"].(map[string]any)
+	repoName := repository["name"].(string)
+	time := data["created_at"].(string)
+
+	result := DashStyle.Render("-") +
+		ContentStyle.Render(fmt.Sprintf("Deleted a %s in %s at %s!",
+			createType, repoName, time))
+	fmt.Println(result)
 }
 
-func forkEvent(data map[string]any) string {
-	// Handle ForkEvent
-	return "Handled ForkEvent"
+func forkEvent(data map[string]any) {
+	payload := data["payload"].(map[string]any)
+	fork := payload["forkee"].(map[string]any)
+	repository := data["repository"].(map[string]any)
+	forkRepoName := fork["name"].(string)
+	repoName := repository["name"].(string)
+	time := data["created_at"].(string)
+
+	result := DashStyle.Render("-") +
+		ContentStyle.Render(fmt.Sprintf("Forked a repo from %s into %s at %s!",
+			forkRepoName, repoName, time))
+	fmt.Println(result)
 }
 
-func issueCommentEvent(data map[string]any) string {
-	// Handle IssueCommentEvent
-	return "Handled IssueCommentEvent"
+func issueCommentEvent(data map[string]any) {
+	payload := data["payload"].(map[string]any)
+	comment := payload["comment"].(map[string]any)
+	body := comment["body"].(string)
+	issue := payload["issue"].(map[string]any)
+	url := issue["html_url"].(string)
+	action := payload["action"].(string)
+	repository := data["repo"].(map[string]any)
+	repoName := repository["name"].(string)
+	time := data["created_at"].(string)
+
+	var result string
+	switch action {
+	case "edited":
+		prev := payload["changes"].(map[string]any)["body"].(map[string]any)["from"].(string)
+		result = DashStyle.Render("-") +
+			ContentStyle.Render(fmt.Sprintf("%s a comment on %s saying \"%s\" to\"%s\" in %s at %s!",
+				strings.ToUpper(string(action[0]))+action[1:], url, body, prev, repoName, time))
+	default:
+		result = DashStyle.Render("-") +
+			ContentStyle.Render(fmt.Sprintf("%s a comment on %s saying \"%s\" in %s at %s!",
+				strings.ToUpper(string(action[0]))+action[1:], url, body, repoName, time))
+	}
+	fmt.Println(result)
 }
 
 func issuesEvent(data map[string]any) string {
