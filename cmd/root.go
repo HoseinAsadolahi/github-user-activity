@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-var pageNumber = 1
+var pageNumber int
 
 var rootCmd = &cobra.Command{
 	Use:   "github-activity <username>",

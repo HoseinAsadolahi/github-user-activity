@@ -272,33 +272,29 @@ func pullRequestEvent(data map[string]any) {
 	pullReq := payload["pull_request"].(map[string]any)
 	url := pullReq["url"].(string)
 	title := pullReq["title"].(string)
-	body := pullReq["body"].(string)
 	action := payload["action"].(string)
 	repository := data["repo"].(map[string]any)
 	repoName := repository["name"].(string)
-	createdAt := data["created_at"].(string)
+	updatedAt := pullReq["updated_at"].(string)
 
 	var result string
 	switch action {
 	case "edited":
-		prevBody := payload["changes"].(map[string]any)["body"].(map[string]any)["from"].(string)
 		prevTitle := payload["changes"].(map[string]any)["title"].(map[string]any)["from"].(string)
-		updatedAt := data["updated_at"].(string)
 		result = DashStyle.Render("-") + ContentStyle.Render(fmt.Sprintf(
 			"%s a pull request:%s "+IfThenElse(prevTitle == title, fmt.Sprintf("with \"%s\" as title",
 				title), fmt.Sprintf(" and changed its title from %s into %s",
-				prevTitle, title)).(string)+IfThenElse(prevBody == body, " ",
-				" and updated the description ").(string)+"in %s at %s",
+				prevTitle, title)).(string)+"in %s at %s",
 			strings.ToUpper(string(action[0]))+action[1:], url, repoName, updatedAt))
 	case "dequeued":
 		reason := payload["reason"].(string)
 		result = DashStyle.Render("-") +
 			ContentStyle.Render(fmt.Sprintf("%s a pull request: %s with \"%s\" as title in %s because %s at %s!",
-				strings.ToUpper(string(action[0]))+action[1:], url, repoName, reason, createdAt))
+				strings.ToUpper(string(action[0]))+action[1:], url, title, repoName, reason, updatedAt))
 	default:
 		result = DashStyle.Render("-") +
 			ContentStyle.Render(fmt.Sprintf("%s a pull request: %s with \"%s\" as title in %s at %s!",
-				strings.ToUpper(string(action[0]))+action[1:], url, repoName, createdAt))
+				strings.ToUpper(string(action[0]))+action[1:], url, title, repoName, updatedAt))
 	}
 	fmt.Println(result)
 }
@@ -372,7 +368,7 @@ func pullRequestReviewThreadEvent(data map[string]any) {
 
 func pushEvent(data map[string]any) {
 	payload := data["payload"].(map[string]any)
-	commits := payload["commits"].([]map[string]any)
+	commits := payload["commits"].([]any)
 	repository := data["repo"].(map[string]any)
 	repoName := repository["name"].(string)
 	createdAt := data["created_at"].(string)
@@ -382,10 +378,11 @@ func pushEvent(data map[string]any) {
 			len(commits), repoName, createdAt))
 	fmt.Println(result)
 	for _, commit := range commits {
-		message := commit["message"].(string)
-		id := commit["id"].(string)
-		author := commit["author"].(map[string]any)["email"].(string)
-		fmt.Println(IdStyle.Render(id+": ") + ContentStyle.Render(message+" By "+author))
+		converted := commit.(map[string]any)
+		message := converted["message"].(string)
+		sha := converted["sha"].(string)
+		author := converted["author"].(map[string]any)["email"].(string)
+		fmt.Println(IdStyle.Render(sha[0:7]+": ") + ContentStyle.Render(message+" By "+author))
 	}
 }
 
