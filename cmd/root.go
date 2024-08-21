@@ -14,11 +14,9 @@ var rootCmd = &cobra.Command{
 	Short: "Fetch GitHub activity for a specific user",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if pageNumber == 0 {
-			pageNumber = 1
-		}
 		if pageNumber < 1 || pageNumber > 10 {
-			fmt.Println("page number must be between 1 and 10")
+			fmt.Println(utils.ErrorStyle.Render("page number must be between 1 and 10"))
+			return
 		}
 		username := args[0]
 		fmt.Println(utils.InfoStyle.Render("Fetching data ..."))
@@ -27,7 +25,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.Flags().IntVarP(&pageNumber, "page", "p", 0, "Page number to fetch (default is 0)")
+	rootCmd.Flags().IntVarP(&pageNumber, "page", "p", 1, "Page number to fetch (default is 0)")
 }
 
 func Execute() {
