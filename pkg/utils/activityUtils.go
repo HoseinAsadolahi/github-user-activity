@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"net/http"
 	"strings"
+	"time"
 )
 
 var DashStyle = lipgloss.NewStyle().
@@ -23,13 +24,18 @@ var InfoStyle = lipgloss.NewStyle().
 
 var ErrorStyle = lipgloss.NewStyle().
 	Bold(true).
-	Underline(true).
+	Italic(true).
 	Foreground(lipgloss.Color("#FF0000"))
 
 func DisplayInfo(username string, page int) {
 	data, err := fetchData(username, page)
 	if err != nil {
-		fmt.Println(ErrorStyle.Render(err.Error()))
+		if strings.Contains(err.Error(), "deadline") {
+			fmt.Println(ErrorStyle.Render("Timeout! Please check your connection!"))
+		} else {
+			fmt.Println(ErrorStyle.Render(err.Error()))
+		}
+		return
 	}
 	for _, item := range data {
 		muxData(item)
@@ -37,9 +43,13 @@ func DisplayInfo(username string, page int) {
 }
 
 func fetchData(username string, page int) ([]map[string]any, error) {
-	response, err := http.Get(fmt.Sprintf("https://api.github.com/users/%s/events?page=%d", username, page))
+	client := http.Client{
+		Timeout: 3 * time.Second,
+	}
+	response, err := client.Get(fmt.Sprintf("https://api.github.com/users/%s/events?page=%d",
+		username, page))
 	if err != nil {
-		fmt.Println(ErrorStyle.Render(err.Error()))
+		return nil, err
 	}
 	if response.StatusCode != 200 {
 		if response.StatusCode == 404 {

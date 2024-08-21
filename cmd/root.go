@@ -21,7 +21,7 @@ var rootCmd = &cobra.Command{
 			fmt.Println("page number must be between 1 and 10")
 		}
 		username := args[0]
-		fmt.Println(utils.InfoStyle.Render(fmt.Sprintf("Fetching data for user: %s, page: %d", username, pageNumber)))
+		fmt.Println(utils.InfoStyle.Render("Fetching data ..."))
 		utils.DisplayInfo(username, pageNumber-1)
 	},
 }
